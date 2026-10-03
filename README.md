@@ -9,9 +9,13 @@
   <a href="results/">Raw results</a>
 </p>
 
+> **New, 2026-10-03: images and 256K-token context.** Every size now reads images as part of a request's evidence and
+> prompts up to 262,144 tokens. See [Images and long inputs](#images-and-long-inputs).
+
 StartLux-Decision is a family of typed decision models: five dense sizes from 0.8B to 27B, and a 35B-A3B mixture of
 experts. You send a state and a set of
-questions: pick one of several options, yes or no, or a rating on a scale. Every question comes back with a probability
+questions: pick one of several options, yes or no, or a rating on a scale. The state can be text, JSON or images, and as
+long as 262,144 tokens (256K) at every size. Every question comes back with a probability
 for each option. Nothing is generated; the answer is read from the option letters after one forward pass, so a short
 question takes a few milliseconds and the probabilities can be used as confidence. Requests and responses use the
 TypeSafe `/v1/systemone` format, so clients written for Jev work unchanged. This repository has the inference code,
@@ -197,6 +201,21 @@ start on a GPU without them. All questions of a request run in one forward pass,
 launch overhead for short requests: StartLux-Decision-4B takes 90.3 ms for the same request without them. Bulk evaluation goes through a batched path instead. Details in
 [docs/inference.md](docs/inference.md).
 
+## Images and long inputs
+
+Every size reads images and long documents. A request can carry images as part of its evidence, and a prompt can run
+to 262,144 tokens (256K), the models' native context: a long state is read once, in chunks, and every question of the
+request branches off it.
+
+```python
+answers, usage = m.decide("Photo taken at delivery: <image>",
+                          {"damaged": {"type": "noul", "instructions": "Is the parcel damaged?"}},
+                          images=["parcel.jpg"])
+```
+
+Over HTTP, `"images"` is a list of base64 strings or data URIs. Details are in
+[docs/inference.md](docs/inference.md#images); the MLX and GGUF backends read text only.
+
 ## GGUF
 
 Every dense size also comes as GGUF files for llama.cpp: BF16, which keeps the weights unchanged, and llama.cpp's standard
@@ -334,7 +353,7 @@ Index runner. [docs/finetuning.md](docs/finetuning.md) shows how to adapt a mode
 ## Layout
 
 ```
-startlux_decision/       inference: prompt rendering, letter readout, CUDA graphs, MLX for Apple Silicon, HTTP servers (also for GGUF), kernel check
+startlux_decision/       inference: prompt rendering, letter readout, CUDA graphs, long inputs, images, MLX for Apple Silicon, HTTP servers (also for GGUF), kernel check
 demos/          the computer-use harness and its two mock sites, and the chess match tools
 eval/           evaluation: Intern-Decision suites and JevBench public tiers, Typed Decisions, Decision Index, latency
 finetune/       LoRA fine-tuning on your own data and temperature calibration

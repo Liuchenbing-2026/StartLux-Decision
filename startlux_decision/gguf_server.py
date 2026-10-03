@@ -13,6 +13,7 @@ import argparse
 import json
 import os
 import urllib.request
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -80,17 +81,23 @@ def main():
             self.send_response(code)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(data)))
+            self.send_header("x-typesafe-request-id", uuid.uuid4().hex)
             self.end_headers()
             self.wfile.write(data)
 
         def do_GET(self):
+            if self.path.rstrip("/") == "/v1/models":
+                return self._send(200, {"models": [{"name": a.name, "description": "StartLux-Decision typed decision model "
+                                                    "(GGUF)", "release_date": "2026-10-01"}]})
             self._send(200, {"status": "ok", "model": a.name})
 
         def do_POST(self):
             try:
                 req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
-                answers, usage = engine.decide(req["state"], req["questions"])
+                answers, usage = engine.decide(req.get("state"), req["questions"])
                 self._send(200, {"answers": answers, "usage": usage, "model": a.name})
+            except (ValueError, KeyError) as e:                    # malformed request or one the model cannot answer
+                self._send(422, {"error": str(e), "detail": [{"loc": ["body"], "msg": str(e), "type": "value_error"}]})
             except Exception as e:                                 # surfaced to the client; suites.py stops on it
                 self._send(500, {"error": repr(e)})
 

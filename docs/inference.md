@@ -59,13 +59,13 @@ For the support-ticket request in the README, StartLux-Decision-4B answers (numb
 
 ```json
 {"answers": {
-   "team": {"type": "choice", "choice": "billing", "confidence": 0.880,
-            "probabilities": {"billing": 0.880, "shipping": 0.005, "technical": 0.115}},
-   "urgent": {"type": "noul", "noul": 0.634},
-   "severity": {"type": "score", "score": 1.340, "confidence": 0.454,
+   "team": {"type": "choice", "choice": "billing", "confidence": 0.816,
+            "probabilities": {"billing": 0.877, "shipping": 0.005, "technical": 0.118}},
+   "urgent": {"type": "noul", "noul": 0.635},
+   "severity": {"type": "score", "score": 1.335, "confidence": 0.002,
                 "legend": {"0": "cosmetic", "1": "annoying", "2": "blocks the customer"},
-                "probabilities": {"0": 0.114, "1": 0.433, "2": 0.454}}},
- "usage": {"input_tokens": 290, "output_tokens": 0}, "model": "StartLux-Decision-4B", "latency_ms": 27.0}
+                "probabilities": {"0": 0.116, "1": 0.433, "2": 0.451}}},
+ "usage": {"input_tokens": 290, "output_tokens": 0}, "model": "StartLux-Decision-4B", "latency_ms": 15.7}
 ```
 
 Each question is rendered as its own prompt with the full state, options lettered A, B, C and so on in the order you
@@ -75,6 +75,16 @@ the options that miss the final keep a small share of probability in proportion 
 still gets a non-zero probability.
 
 Temperatures are per question type and live in `decision_config.json`. Changing them never changes which option wins.
+
+`confidence` follows TypeSafe's definitions, so code that thresholds it behaves the same against either service. For a
+choice it is (p_max − 1/n) / (1 − 1/n): 0 for an even split over the n options, 1 when one option has all the
+probability. For a score it is 1 minus the probability-weighted distance, in levels, from the most likely level,
+divided by the same distance for an even spread measured from the middle level, and floored at 0: probability on a
+neighbouring level lowers it less than probability at the far end. Yes/no answers have no `confidence`; |2p − 1| is the
+equivalent. Until 2026-10-03 the package returned the top probability as `confidence`; it is still in `probabilities`.
+Every response carries an `x-typesafe-request-id` header, `GET /v1/models` lists the model with its release date, and
+an error comes back as `{"error": message, "detail": [{"loc", "msg", "type"}]}`, with status 400 for a malformed body
+and 422 for a request the model cannot answer, such as a score with more than ten levels.
 
 ## Python
 
@@ -92,6 +102,48 @@ sample of the Decision Index suite (2,678 requests) StartLux-Decision-4B took 14
 `decide` once per request, and the chosen options agreed on 99.94% of the 6,897 questions. The differences are bf16
 rounding between batch shapes; on 981 JevBench and Typed Decisions questions the largest probability difference was
 0.008.
+
+## Long inputs
+
+A prompt can be as long as 262,144 tokens, the native context of all six models (`max_length`, or `--max-length` on the
+server). Every question of a request carries the full state, so their prompts begin with the same tokens. When that
+shared beginning is longer than 4,096 tokens it runs once: the model reads it in chunks of 32,768 tokens
+(`prefill_chunk`) and keeps what each layer carries forward, the keys and values of the attention layers and the
+convolution and recurrent state of the linear-attention layers. Then all questions run as one batch on top of it. A
+single question over a long document runs the same way, so memory stays close to the keys and values of the prompt
+instead of growing with the activations of the whole input. Attention over the stored keys runs as fused cuDNN or flash
+attention calls whose outputs are merged by their log-sum-exp, without an attention mask. Prompts that long take seconds
+rather than milliseconds, and at 256K tokens the 27B and the 35B-A3B need most of an 80 GB GPU.
+
+## Images
+
+The checkpoints include a vision tower, and the package uses it. Images are part of the evidence of a request:
+
+```python
+answers, usage = m.decide("Photo taken at delivery: <image>",
+                          {"damaged": {"type": "noul", "instructions": "Is the parcel damaged?"}},
+                          images=["parcel.jpg"])
+```
+
+```bash
+curl -s localhost:8090/v1/systemone -H 'Content-Type: application/json' -d '{
+  "state": "Photo taken at delivery: <image>",
+  "questions": {"damaged": {"type": "noul", "instructions": "Is the parcel damaged?"}},
+  "images": ["data:image/jpeg;base64,'"$(base64 < parcel.jpg | tr -d '\n')"'"]
+}'
+```
+
+- In Python an image can be a PIL image, a file path, encoded bytes, a base64 string or a data URI. Over HTTP, `images`
+  is a list of base64 strings or data URIs.
+- `<image>` in a string state marks where each image goes, one mark per image, in order. Without marks the images come
+  first (as `Image 1:`, `Image 2:` ... when there are several), followed by the state.
+- Each image is resized to at most 1,048,576 pixels, keeping its aspect ratio (`max_pixels`, `--max-pixels`), and
+  becomes one token per 32 × 32 pixels: a 1024 × 1024 photo is 1,024 tokens.
+- The vision tower runs once per request, and every question of the request reads the same image tokens. Image
+  requests run on the eager path, without the CUDA graphs.
+- The vision tower adds 0.2 to 0.9 GB of GPU memory. `StartLuxDecision(..., images=False)` or `--no-images` leaves it
+  out.
+- The MLX and GGUF backends read text only.
 
 ## Why it is fast
 

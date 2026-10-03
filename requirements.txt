@@ -3,6 +3,9 @@ torch>=2.8
 transformers>=5.8
 huggingface_hub>=0.34
 safetensors>=0.4
+# image input: the checkpoints' image processor uses torchvision; install the build that matches your torch
+pillow>=10
+torchvision>=0.23
 # required on CUDA: without them transformers silently runs a plain torch path (>10x slower)
 flash-linear-attention>=0.5.2; sys_platform == "linux"
 causal-conv1d>=1.7; sys_platform == "linux"          # CUDA build; if pip compiles it, add --no-build-isolation
