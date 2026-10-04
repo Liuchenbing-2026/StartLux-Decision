@@ -3,7 +3,7 @@
     python -m startlux_decision.server --model StartLux-Decision-4B              # --backend auto picks MLX on a Mac
     python -m startlux_decision.server --model StartLux-Decision-4B --int8       # M5 and later: int8 matmuls
 
-MLXDecision is StartLuxDecision with the forward pass run by mlx-lm's Qwen3.5 implementation, which has Metal kernels
+MLXDecision is StartLuxDecision with the forward pass run by mlx-lm's implementation of the model, which has Metal kernels
 for the linear-attention layers (PyTorch on MPS runs reference code there).  As in GGUFDecision, prompt rendering, the
 option-letter readout, the per-type temperatures and wide choices are the package's own code.
 

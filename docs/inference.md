@@ -264,7 +264,7 @@ answers, usage = model.decide(state, questions)
 The MLX backend does three things:
 
 - **The forward pass runs in MLX.** `MLXDecision` replaces only the forward pass, as the GGUF server does, and uses
-  mlx-lm's Qwen3.5 implementation with its Metal kernels for the linear-attention layers. PyTorch on MPS has no such
+  mlx-lm's implementation of the model with its Metal kernels for the linear-attention layers. PyTorch on MPS has no such
   kernels and runs reference code. Prompts, the option-letter readout, the temperatures and wide choices are the
   package's own code. In bf16 the public JevBench scores of 0.8B, 2B, 4B and 9B are the published ones.
 - **Prefixes are reused.** Every prompt starts with the same system text. It runs once when the server starts, and each
