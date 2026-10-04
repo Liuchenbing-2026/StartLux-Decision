@@ -4,11 +4,13 @@
 
 ```bash
 hf download startlux-models/StartLux-Decision-4B --local-dir StartLux-Decision-4B      # or any size, see below
+# or, from ModelScope: modelscope download StartLuxAI/StartLux-Decision-4B --local-dir StartLux-Decision-4B
 pip install -r requirements.txt
 ```
 
 The six models are in the [StartLux-Decision collection](https://huggingface.co/collections/startlux-models/startlux-decision-6abba92b301b573fa154d493) on Hugging Face: StartLux-Decision-0.8B, 2B, 4B, 9B, 27B and 35B-A3B, under
-`startlux-models/`. The examples below use a local folder called `StartLux-Decision-4B`.
+`startlux-models/`. The same repositories are on ModelScope under [`StartLuxAI/`](https://modelscope.cn/organization/StartLuxAI). The examples below use a
+local folder called `StartLux-Decision-4B`.
 
 `requirements.txt` includes `flash-linear-attention` and `causal-conv1d`. They matter more than anything else on this
 page. The models use linear-attention layers, and without these two packages transformers quietly falls back to a
@@ -222,7 +224,8 @@ then leaks into real rows through attention. When we let FP8 run on padded batch
 ## GGUF and llama.cpp
 
 GGUF files of every size are on Hugging Face, one repository per size and precision (BF16, Q8_0 and Q4_K_M), named
-`startlux-models/StartLux-Decision-<size>-<precision>-GGUF`. They hold the text decoder only. The prompt format, the
+`startlux-models/StartLux-Decision-<size>-<precision>-GGUF` (on ModelScope: `StartLuxAI/` with the same names). They hold
+the text decoder only. The prompt format, the
 option-letter readout and the per-type temperatures stay in this package, and `startlux_decision.gguf_server` puts them
 in front of llama-server:
 

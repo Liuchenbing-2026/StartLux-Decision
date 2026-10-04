@@ -2,6 +2,7 @@
 
 <p align="center">
   <a href="https://huggingface.co/collections/startlux-models/startlux-decision-6abba92b301b573fa154d493">Models on Hugging Face</a> ·
+  <a href="https://modelscope.cn/organization/StartLuxAI">Models on ModelScope</a> ·
   <a href="docs/results.md">Results</a> ·
   <a href="docs/inference.md">Inference</a> ·
   <a href="docs/evaluation.md">Evaluation</a> ·
@@ -20,7 +21,8 @@ for each option. Nothing is generated; the answer is read from the option letter
 question takes a few milliseconds and the probabilities can be used as confidence. Requests and responses use the
 TypeSafe `/v1/systemone` format, so clients written for Jev work unchanged. This repository has the inference code,
 the evaluation scripts, the results and the raw game logs. The weights are on Hugging Face, in the
-[StartLux-Decision collection](https://huggingface.co/collections/startlux-models/startlux-decision-6abba92b301b573fa154d493).
+[StartLux-Decision collection](https://huggingface.co/collections/startlux-models/startlux-decision-6abba92b301b573fa154d493),
+and on ModelScope, under [StartLuxAI](https://modelscope.cn/organization/StartLuxAI).
 
 ## Demos
 
@@ -220,7 +222,8 @@ Over HTTP, `"images"` is a list of base64 strings or data URIs. Details are in
 
 Every dense size also comes as GGUF files for llama.cpp: BF16, which keeps the weights unchanged, and llama.cpp's standard
 Q8_0 and Q4_K_M quantizations of it. Each file has its own Hugging Face repository,
-`startlux-models/StartLux-Decision-<size>-<precision>-GGUF`, linked from the table below. The decision procedure is not
+`startlux-models/StartLux-Decision-<size>-<precision>-GGUF`, linked from the table below, and the same repository on
+ModelScope under `StartLuxAI/`. The decision procedure is not
 in the weights; `python -m startlux_decision.gguf_server` runs it in front of llama-server (see
 [docs/inference.md](docs/inference.md#gguf-and-llamacpp)). Against the original weights on the 231 public JevBench items:
 
@@ -297,7 +300,7 @@ per line in all three transcript variants.
 
 ## Quick start
 
-The weights are on Hugging Face, as the original checkpoints for this package and as GGUF files for llama.cpp (see [GGUF](#gguf)). Each model folder also carries the inference package from this repository.
+The weights are on Hugging Face, as the original checkpoints for this package and as GGUF files for llama.cpp (see [GGUF](#gguf)). Each model folder also carries the inference package from this repository. Every repository is also on ModelScope, with the same name and the same files, under [StartLuxAI](https://modelscope.cn/organization/StartLuxAI): `https://modelscope.cn/models/StartLuxAI/<repository name>`.
 
 <div align="center">
 
@@ -313,6 +316,7 @@ The weights are on Hugging Face, as the original checkpoints for this package an
 
 ```bash
 hf download startlux-models/StartLux-Decision-4B --local-dir StartLux-Decision-4B
+# or, from ModelScope: modelscope download StartLuxAI/StartLux-Decision-4B --local-dir StartLux-Decision-4B
 pip install -r requirements.txt
 python -m startlux_decision.check StartLux-Decision-4B          # must print "fast kernels: active" (on a Mac: MLX)
 python -m startlux_decision.server --model StartLux-Decision-4B --port 8090
@@ -364,7 +368,7 @@ media/          figures and recordings used here
 
 ## License
 
-The code in this repository is Apache-2.0 ([LICENSE](LICENSE)). The model weights on Hugging Face are released under
+The code in this repository is Apache-2.0 ([LICENSE](LICENSE)). The model weights on Hugging Face and ModelScope are released under
 [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/): free for research and other non-commercial use, with
 attribution. Commercial use requires a separate license from StartLux Labs; contact
 [contact@startlux.com](mailto:contact@startlux.com). Benchmark data is fetched from its original sources under their own
