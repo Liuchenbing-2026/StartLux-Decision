@@ -68,8 +68,10 @@ and multiple rows) against the Transformers reference with `atol=0.002`,
 establish whole-model accuracy equivalence. Seven-suite evaluation is separate.
 The CPU contracts and all seven real-device recurrence cases passed. The 4B
 service (one NPU) and 35B-A3B service (two-NPU automatic layer placement) passed
-startup with a three-field request. Full seven-suite evaluation is in progress;
-these smoke checks do not establish model acceptance.
+startup with a three-field request. The 4B seven-suite evaluation completed with all 10,751 rows / 12,351 decisions
+and zero missing or invalid decisions. The 35B seven-suite evaluation is still
+running; its smoke check does not establish model acceptance. Numerical results
+and raw predictions are retained separately from this source repository.
 
 Performance results are not published in this change. A reproducible optional
 latency command is:
