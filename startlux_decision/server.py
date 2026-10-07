@@ -40,9 +40,10 @@ def main():
     ap.add_argument("--model", required=True, help="local StartLux-Decision directory")
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8090)
-    ap.add_argument("--device", help="cuda or cpu for the torch backend (default: cuda when available)")
-    ap.add_argument("--backend", choices=("auto", "torch", "mlx"), default="auto",
-                    help="auto: MLX on Apple Silicon when mlx-lm is installed, else torch")
+    ap.add_argument("--device", help="cuda/cpu for torch, npu:0 for the explicit npu backend")
+    ap.add_argument("--backend", choices=("auto", "torch", "mlx", "npu"), default="auto",
+                    help="auto: MLX on Apple Silicon when available, else torch; npu: explicit Ascend backend")
+    ap.add_argument("--device-map", choices=("auto",), help="NPU layer placement across explicitly visible devices")
     ap.add_argument("--int8", action="store_true", help="MLX on M5 and later: int8 matmuls on the neural accelerators")
     ap.add_argument("--name", help="model name reported in responses (default: the directory name)")
     ap.add_argument("--max-length", type=int, default=262144, help="longest prompt in tokens (torch backend)")
@@ -52,7 +53,10 @@ def main():
     backend = a.backend
     if backend == "auto":
         backend = "mlx" if a.device is None and mlx_available() else "torch"
-    if backend == "mlx":
+    if backend == "npu":
+        from .npu_model import NPUDecision
+        engine = NPUDecision(a.model, device=a.device or "npu:0", max_length=a.max_length, device_map=a.device_map)
+    elif backend == "mlx":
         from .mlx_model import MLXDecision
         engine = MLXDecision(a.model, int8=a.int8)
         engine.warm_up()
